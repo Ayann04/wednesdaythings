@@ -1,4 +1,4 @@
-import os
+import tempfile, os
 import re
 import time
 import logging
@@ -128,9 +128,12 @@ def _driver_from_config() -> webdriver.Chrome:
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
     chrome_options.add_argument("--font-render-hinting=none")
     chrome_options.add_argument("--remote-debugging-port=9222")
+    user_data_dir = tempfile.mkdtemp()
+    chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
 
     # If a custom Chrome binary was provided (e.g., CHROME_BIN), use it
     chrome_binary = getattr(settings, "CHROME_BINARY", None) or os.getenv("GOOGLE_CHROME_BIN") or os.getenv("CHROME_BIN")
