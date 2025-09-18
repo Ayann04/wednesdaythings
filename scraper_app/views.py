@@ -120,9 +120,9 @@ def _driver_from_config() -> webdriver.Chrome:
     Production: rely on Selenium Manager to provision Chrome for Testing and matching driver.
     Local/dev: optionally use webdriver-manager only if USE_WEBDRIVER_MANAGER=1 is set.
     """
+    print("Gunicorn workers PID: %s", os.getpid())
     chrome_options = Options()
     # Deployment-friendly options
-    chrome_options.add_argument("--incognito")
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -133,28 +133,36 @@ def _driver_from_config() -> webdriver.Chrome:
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
     chrome_options.add_argument("--font-render-hinting=none")
     chrome_options.add_argument("--remote-debugging-port=9222")
+    # chrome_options.add_argument("--incognito")
+    
+    profile_dir = tempfile.mkdtemp()
+    chrome_options.add_argument(f"--user-data-dir={profile_dir}")
+    print("Forced temp user-data-dir: %s", profile_dir, flush=True)
 
     # If a custom Chrome binary was provided (e.g., CHROME_BIN), use it
     chrome_binary = getattr(settings, "CHROME_BINARY", None) or os.getenv("GOOGLE_CHROME_BIN") or os.getenv("CHROME_BIN")
     if chrome_binary:
         chrome_options.binary_location = chrome_binary
-        logger.info("Using custom Chrome binary: %s", chrome_binary)
+        print("Using custom Chrome binary: %s", chrome_binary, flush=True)
 
     # Choose driver provisioning strategy
     driver_path = getattr(settings, "CHROMEDRIVER_PATH", os.getenv("CHROMEDRIVER_PATH"))
     use_wdm = bool(ChromeDriverManager) and str(os.getenv("USE_WEBDRIVER_MANAGER", "")).strip().lower() in ("1", "true", "yes", "y", "on")
 
     if driver_path and os.path.exists(driver_path):
-        logger.info("Using ChromeDriver from path: %s", driver_path)
+        print("Using ChromeDriver from path: %s", driver_path, flush=True)
         service = Service(executable_path=driver_path)
     elif use_wdm:
-        logger.info("Installing ChromeDriver via webdriver_manager due to USE_WEBDRIVER_MANAGER=1")
+        print("Installing ChromeDriver via webdriver_manager due to USE_WEBDRIVER_MANAGER=1", flush=True)
         service = Service(ChromeDriverManager().install())
     else:
         # Default: Selenium Manager (no explicit driver path). It can download Chrome for Testing and the matching driver.
-        logger.info("Using Selenium Manager to provision Chrome/Driver (no explicit driver path)")
+        print("Using Selenium Manager to provision Chrome/Driver (no explicit driver path)", flush=True)
         service = Service()
-
+    print("Resolved Chrome binary: %s", chrome_options.binary_location, flush=True)   
+    print("Driver path: %s", driver_path, flush=True)
+    print("Use WebDriver Manager: %s", use_wdm, flush=True)  
+    print("Chrome options: %s", chrome_options.arguments, flush=True)
     return webdriver.Chrome(service=service, options=chrome_options)
 
 
