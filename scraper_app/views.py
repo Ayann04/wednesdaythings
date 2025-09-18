@@ -122,6 +122,7 @@ def _driver_from_config() -> webdriver.Chrome:
     """
     chrome_options = Options()
     # Deployment-friendly options
+    chrome_options.add_argument("--incognito")
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
